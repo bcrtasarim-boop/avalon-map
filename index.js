@@ -1,9 +1,9 @@
 // index.js
-const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } = require("discord.js");
-const { REST } = require("@discordjs/rest");
-const express = require("express");
-const dotenv = require("dotenv");
-const maps = require("./data.json"); // Local JSON
+import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } from "discord.js";
+import { REST } from "@discordjs/rest";
+import express from "express";
+import dotenv from "dotenv";
+import maps from "./data.json" assert { type: "json" };
 
 dotenv.config();
 
@@ -69,7 +69,9 @@ client.on("interactionCreate", async interaction => {
     const inputNorm = normalize(inputName);
     const map = maps.find(m => normalize(m.name).includes(inputNorm));
     if (!map) {
-      await interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.").catch(console.error);
+      try {
+        await interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
+      } catch (err) { console.error("Fallback mesaj gönderilemedi:", err); }
       return;
     }
 
@@ -110,11 +112,12 @@ client.on("interactionCreate", async interaction => {
       console.log("Harita gönderildi:", map.name);
     } catch (err) {
       console.error("Embed gönderilemedi:", err);
+      // fallback güvenli
       try {
-        await interaction.followUp("Bir hata oluştu, harita gösterilemedi.");
-      } catch (err2) {
-        console.error("Fallback mesaj da gönderilemedi:", err2);
-      }
+        if (!interaction.replied) {
+          await interaction.editReply("Bir hata oluştu, harita gösterilemedi.");
+        }
+      } catch (err2) { console.error("Fallback mesaj gönderilemedi:", err2); }
     }
   }
 });
