@@ -59,13 +59,11 @@ function normalize(str) {
 
 // ----- Görsel URL Fonksiyonu -----
 function getImageUrl(map) {
-  let fileName = map.img;
-  if (!fileName.endsWith(".webp") && !fileName.endsWith(".png")) {
-    fileName += ".webp";
-  }
+  const fileName = map.img; // Örn: "Pynos-Opabrom%20t6.webp"
+  
+  // Fonksiyonun kendisi URL'yi oluşturmalı
   return "https://avalonroads-97617.web.app/img_webp/" + fileName;
 }
-
 // ----- Slash Command -----
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
@@ -126,4 +124,5 @@ client.on("interactionCreate", async interaction => {
 
 client.once("ready", () => console.log(`Bot hazır ✅ ${client.user.tag}`));
 client.login(process.env.BOT_TOKEN);
+
 
