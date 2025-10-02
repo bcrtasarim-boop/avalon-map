@@ -1,9 +1,9 @@
-// index.js
-import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } from "discord.js";
-import { REST } from "@discordjs/rest";
-import express from "express";
-import dotenv from "dotenv";
-import maps from "./data.json" assert { type: "json" };
+// index.js (CommonJS)
+const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } = require("discord.js");
+const { REST } = require("@discordjs/rest");
+const express = require("express");
+const dotenv = require("dotenv");
+const maps = require("./data.json"); // data.json index.js ile aynı klasörde
 
 dotenv.config();
 
@@ -81,7 +81,7 @@ client.on("interactionCreate", async interaction => {
 
     (map.icons || []).forEach(icon => {
       const info = iconMap[icon.alt];
-      if (!info) return; // geçersiz icon skip
+      if (!info) return;
 
       if (info.type === "chest") {
         const count = icon.badge ? ` (${icon.badge})` : " (1)";
@@ -112,7 +112,6 @@ client.on("interactionCreate", async interaction => {
       console.log("Harita gönderildi:", map.name);
     } catch (err) {
       console.error("Embed gönderilemedi:", err);
-      // fallback güvenli
       try {
         if (!interaction.replied) {
           await interaction.editReply("Bir hata oluştu, harita gösterilemedi.");
