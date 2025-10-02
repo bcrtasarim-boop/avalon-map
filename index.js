@@ -62,14 +62,16 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "map") {
-    await interaction.deferReply();
+    await interaction.deferReply().catch(console.error);
     const inputName = interaction.options.getString("isim");
+    console.log("Kullanıcı girdi:", inputName);
 
     const inputNorm = normalize(inputName);
-    // Esnek arama: includes kullanıyoruz
     const map = maps.find(m => normalize(m.name).includes(inputNorm));
-
-    if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
+    if (!map) {
+      await interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.").catch(console.error);
+      return;
+    }
 
     const chests = [];
     const dungeons = [];
@@ -97,10 +99,19 @@ client.on("interactionCreate", async interaction => {
         { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
         { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
       )
-      .setImage(process.env.BASE_URL + map.img)
       .setColor(0x00AE86);
 
-    await interaction.editReply({ embeds: [embed] });
+    try {
+      await interaction.editReply({ embeds: [embed] });
+      console.log("Harita gönderildi:", map.name);
+    } catch (err) {
+      console.error("Interaction gönderilemedi:", err);
+      try {
+        await interaction.followUp("Bir hata oluştu, harita gösterilemedi.");
+      } catch (err2) {
+        console.error("Fallback mesaj da gönderilemedi:", err2);
+      }
+    }
   }
 });
 
