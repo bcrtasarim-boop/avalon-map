@@ -1,9 +1,9 @@
-// index.js (CommonJS)
+// index.js
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } = require("discord.js");
 const { REST } = require("@discordjs/rest");
 const express = require("express");
 const dotenv = require("dotenv");
-const maps = require("./data.json"); // data.json index.js ile aynı klasörde
+const maps = require("./data.json"); // index.js ile aynı klasörde
 
 dotenv.config();
 
@@ -62,40 +62,34 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "map") {
-    await interaction.deferReply().catch(console.error);
-    const inputName = interaction.options.getString("isim");
-    console.log("Kullanıcı girdi:", inputName);
-
-    const inputNorm = normalize(inputName);
-    const map = maps.find(m => normalize(m.name).includes(inputNorm));
-    if (!map) {
-      try {
-        await interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
-      } catch (err) { console.error("Fallback mesaj gönderilemedi:", err); }
-      return;
-    }
-
-    const chests = [];
-    const dungeons = [];
-    const resources = [];
-
-    (map.icons || []).forEach(icon => {
-      const info = iconMap[icon.alt];
-      if (!info) return;
-
-      if (info.type === "chest") {
-        const count = icon.badge ? ` (${icon.badge})` : " (1)";
-        chests.push(`${info.name}${count}`);
-      } else if (info.type === "dungeon") {
-        dungeons.push(info.name);
-      } else if (info.type === "resource") {
-        resources.push(info.name);
-      }
-    });
-
-    const imageUrl = "https://avalonroads-97617.web.app/" + map.img.replace(/^\/+/, "");
-
     try {
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferReply();
+      }
+
+      const inputName = interaction.options.getString("isim");
+      console.log("Kullanıcı girdi:", inputName);
+
+      const map = maps.find(m => normalize(m.name).includes(normalize(inputName)));
+      if (!map) {
+        await interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
+        return;
+      }
+
+      const chests = [], dungeons = [], resources = [];
+      (map.icons || []).forEach(icon => {
+        const info = iconMap[icon.alt];
+        if (!info) return;
+
+        if (info.type === "chest") {
+          const count = icon.badge ? ` (${icon.badge})` : " (1)";
+          chests.push(`${info.name}${count}`);
+        } else if (info.type === "dungeon") dungeons.push(info.name);
+        else if (info.type === "resource") resources.push(info.name);
+      });
+
+      const imageUrl = "https://avalonroads-97617.web.app/" + map.img.replace(/^\/+/, "");
+
       const embed = new EmbedBuilder()
         .setTitle(`Harita: ${map.name}`)
         .setDescription(`Tier: ${map.tier}`)
@@ -111,12 +105,16 @@ client.on("interactionCreate", async interaction => {
       await interaction.editReply({ embeds: [embed] });
       console.log("Harita gönderildi:", map.name);
     } catch (err) {
-      console.error("Embed gönderilemedi:", err);
+      console.error("Embed veya fallback gönderilemedi:", err);
       try {
-        if (!interaction.replied) {
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply("Bir hata oluştu, harita gösterilemedi.");
+        } else {
           await interaction.editReply("Bir hata oluştu, harita gösterilemedi.");
         }
-      } catch (err2) { console.error("Fallback mesaj gönderilemedi:", err2); }
+      } catch (err2) {
+        console.error("Fallback mesaj bile gönderilemedi:", err2);
+      }
     }
   }
 });
