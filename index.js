@@ -1,10 +1,10 @@
-const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } = require("discord.js");
-const { REST } = require("@discordjs/rest");
-const express = require("express");
-const dotenv = require("dotenv");
-dotenv.config();
+import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } from "discord.js";
+import { REST } from "@discordjs/rest";
+import express from "express";
+import dotenv from "dotenv";
+import fetch from "node-fetch";
 
-const data = require("./data.json"); // Local JSON kullanımı
+dotenv.config();
 
 // ----- Uptime Server -----
 const app = express();
@@ -66,7 +66,15 @@ client.on("interactionCreate", async interaction => {
   if (interaction.commandName === "map") {
     await interaction.deferReply();
     const inputName = interaction.options.getString("isim");
-    const maps = data;
+
+    // JSON'u GitHub'dan çek
+    let maps;
+    try {
+      const res = await fetch(process.env.JSON_URL);
+      maps = await res.json();
+    } catch (err) {
+      return interaction.editReply("Haritalar yüklenemedi!"); 
+    }
 
     const map = maps.find(m => normalize(m.name) === normalize(inputName));
     if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
