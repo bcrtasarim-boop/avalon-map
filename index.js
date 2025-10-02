@@ -91,7 +91,7 @@ client.on("interactionCreate", async interaction => {
     }
 
     const map = maps.find(m => normalize(m.name) === normalize(inputName));
-    if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin veya /maps ile listeye bakın.");
+    if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
 
     const chests = [];
     const dungeons = [];
