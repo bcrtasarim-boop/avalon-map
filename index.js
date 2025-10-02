@@ -57,15 +57,22 @@ function normalize(str) {
   return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
 }
 
+// ----- Görsel URL Fonksiyonu -----
+function getImageUrl(map) {
+  let fileName = map.img;
+  if (!fileName.endsWith(".webp") && !fileName.endsWith(".png")) {
+    fileName += ".webp";
+  }
+  return "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(fileName);
+}
+
 // ----- Slash Command -----
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "map") {
     try {
-      if (!interaction.deferred && !interaction.replied) {
-        await interaction.deferReply();
-      }
+      if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
 
       const inputName = interaction.options.getString("isim");
       console.log("Kullanıcı girdi:", inputName);
@@ -88,9 +95,6 @@ client.on("interactionCreate", async interaction => {
         else if (info.type === "resource") resources.push(info.name);
       });
 
-      // --- Görsel URL fix ---
-      const imageUrl = "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(map.img);
-
       const embed = new EmbedBuilder()
         .setTitle(`Harita: ${map.name}`)
         .setDescription(`Tier: ${map.tier}`)
@@ -99,10 +103,10 @@ client.on("interactionCreate", async interaction => {
           { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
           { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
         )
-        .setImage(imageUrl)
+        .setImage(getImageUrl(map))
         .setColor(0x00AE86);
 
-      console.log("Embed URL:", imageUrl);
+      console.log("Embed URL:", getImageUrl(map));
       await interaction.editReply({ embeds: [embed] });
       console.log("Harita gönderildi:", map.name);
     } catch (err) {
