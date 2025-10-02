@@ -2,7 +2,7 @@ import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } 
 import { REST } from "@discordjs/rest";
 import express from "express";
 import dotenv from "dotenv";
-import fetch from "node-fetch";
+import data from "./data.json" assert { type: "json" };
 
 dotenv.config();
 
@@ -14,7 +14,7 @@ app.listen(process.env.PORT || 3000, () => console.log("Uptime server running"))
 // ----- Discord Client -----
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// ----- Slash Command Register (Guild) -----
+// ----- Slash Command Register -----
 const commands = [
   new SlashCommandBuilder()
     .setName("map")
@@ -27,7 +27,6 @@ const commands = [
 ].map(cmd => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
-
 (async () => {
   try {
     console.log("Slash komutlar güncelleniyor...");
@@ -36,9 +35,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
       { body: commands }
     );
     console.log("Slash komutlar güncellendi ✅");
-  } catch (err) {
-    console.error(err);
-  }
+  } catch (err) { console.error(err); }
 })();
 
 // ----- Icon Mapping -----
@@ -67,16 +64,7 @@ client.on("interactionCreate", async interaction => {
     await interaction.deferReply();
     const inputName = interaction.options.getString("isim");
 
-    // JSON'u GitHub'dan çek
-    let maps;
-    try {
-      const res = await fetch(process.env.JSON_URL);
-      maps = await res.json();
-    } catch (err) {
-      return interaction.editReply("Haritalar yüklenemedi!"); 
-    }
-
-    const map = maps.find(m => normalize(m.name) === normalize(inputName));
+    const map = data.find(m => normalize(m.name) === normalize(inputName));
     if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
 
     const chests = [];
