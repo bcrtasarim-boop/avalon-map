@@ -88,7 +88,8 @@ client.on("interactionCreate", async interaction => {
         else if (info.type === "resource") resources.push(info.name);
       });
 
-      const imageUrl = "https://avalonroads-97617.web.app/" + map.img.replace(/^\/+/, "");
+      // --- Görsel URL fix ---
+      const imageUrl = "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(map.img);
 
       const embed = new EmbedBuilder()
         .setTitle(`Harita: ${map.name}`)
