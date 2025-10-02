@@ -1,10 +1,10 @@
-import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } from "discord.js";
-import { REST } from "@discordjs/rest";
-import express from "express";
-import dotenv from "dotenv";
-import data from "./data.json" assert { type: "json" };
-
+const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } = require("discord.js");
+const { REST } = require("@discordjs/rest");
+const express = require("express");
+const dotenv = require("dotenv");
 dotenv.config();
+
+const data = require("./data.json"); // Local JSON kullanımı
 
 // ----- Uptime Server -----
 const app = express();
@@ -27,6 +27,7 @@ const commands = [
 ].map(cmd => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
+
 (async () => {
   try {
     console.log("Slash komutlar güncelleniyor...");
@@ -35,7 +36,9 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
       { body: commands }
     );
     console.log("Slash komutlar güncellendi ✅");
-  } catch (err) { console.error(err); }
+  } catch (err) {
+    console.error(err);
+  }
 })();
 
 // ----- Icon Mapping -----
