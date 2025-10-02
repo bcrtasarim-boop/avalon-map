@@ -1,8 +1,8 @@
 import { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } from "discord.js";
-import fetch from "node-fetch";
+import { REST } from "@discordjs/rest";
 import express from "express";
 import dotenv from "dotenv";
-import { REST } from "@discordjs/rest";
+import data from "./data.json" assert { type: "json" };
 
 dotenv.config();
 
@@ -38,28 +38,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
   } catch (err) { console.error(err); }
 })();
 
-// ----- Map Verisi Cache -----
-let mapCache = [];
-let lastFetch = 0;
-const cacheTTL = 5 * 60 * 1000; // 5 dakika
-
-async function fetchMaps() {
-  const now = Date.now();
-  if (now - lastFetch < cacheTTL && mapCache.length) return mapCache;
-
-  try {
-    const res = await fetch(process.env.JSON_URL);
-    const data = await res.json();
-    mapCache = data;
-    lastFetch = now;
-    return mapCache;
-  } catch (err) {
-    console.error("Map verisi alınamadı:", err);
-    return [];
-  }
-}
-
-// ----- Icon ve Kategori Mapping -----
+// ----- Icon Mapping -----
 const iconMap = {
   BLUE: { name: "Mavi", url: process.env.BASE_URL + "icons/T.png", type: "chest" },
   GREEN: { name: "Yeşil", url: process.env.BASE_URL + "icons/V.png", type: "chest" },
@@ -72,7 +51,7 @@ const iconMap = {
   COTTON: { name: "Pamuk", url: process.env.BASE_URL + "icons/M.png", type: "resource" }
 };
 
-// ----- Normalize Fonksiyonu (case-insensitive + tire/boşluk) -----
+// ----- Normalize Fonksiyonu -----
 function normalize(str) {
   return str.toLowerCase().replace(/-/g, " ").trim();
 }
@@ -84,11 +63,7 @@ client.on("interactionCreate", async interaction => {
   if (interaction.commandName === "map") {
     await interaction.deferReply();
     const inputName = interaction.options.getString("isim");
-    const maps = await fetchMaps();
-
-    if (!maps || maps.length === 0) {
-      return interaction.editReply("Harita verisi alınamadı, lütfen daha sonra tekrar deneyin.");
-    }
+    const maps = data;
 
     const map = maps.find(m => normalize(m.name) === normalize(inputName));
     if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
