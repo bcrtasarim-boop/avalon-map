@@ -86,6 +86,10 @@ client.on("interactionCreate", async interaction => {
     const inputName = interaction.options.getString("isim");
     const maps = await fetchMaps();
 
+    if (!maps || maps.length === 0) {
+      return interaction.editReply("Harita verisi alınamadı, lütfen daha sonra tekrar deneyin.");
+    }
+
     const map = maps.find(m => normalize(m.name) === normalize(inputName));
     if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin veya /maps ile listeye bakın.");
 
@@ -97,10 +101,14 @@ client.on("interactionCreate", async interaction => {
       const info = iconMap[icon.alt];
       if (!info) return;
 
-      const count = icon.badge || 1;
-      if (info.type === "chest") chests.push(`${info.name} (${count})`);
-      else if (info.type === "dungeon") dungeons.push(`${info.name}`);
-      else if (info.type === "resource") resources.push(`${info.name}`);
+      if (info.type === "chest") {
+        const count = icon.badge && icon.badge > 1 ? ` (${icon.badge})` : "";
+        chests.push(`${info.name}${count}`);
+      } else if (info.type === "dungeon") {
+        dungeons.push(info.name);
+      } else if (info.type === "resource") {
+        resources.push(info.name);
+      }
     });
 
     const embed = new EmbedBuilder()
