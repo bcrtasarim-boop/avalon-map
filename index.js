@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } =
 const { REST } = require("@discordjs/rest");
 const express = require("express");
 const dotenv = require("dotenv");
-const maps = require("./data.json"); // Local JSON, artık fetch yok
+const maps = require("./data.json"); // Local JSON
 
 dotenv.config();
 
@@ -65,7 +65,10 @@ client.on("interactionCreate", async interaction => {
     await interaction.deferReply();
     const inputName = interaction.options.getString("isim");
 
-    const map = maps.find(m => normalize(m.name) === normalize(inputName));
+    const inputNorm = normalize(inputName);
+    // Esnek arama: includes kullanıyoruz
+    const map = maps.find(m => normalize(m.name).includes(inputNorm));
+
     if (!map) return interaction.editReply("Harita bulunamadı. Lütfen doğru isim girin.");
 
     const chests = [];
