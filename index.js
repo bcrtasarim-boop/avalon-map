@@ -41,15 +41,15 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
 
 // ----- Icon Mapping -----
 const iconMap = {
-  BLUE: { name: "Mavi", url: process.env.BASE_URL + "icons/T.png", type: "chest" },
-  GREEN: { name: "Yeşil", url: process.env.BASE_URL + "icons/V.png", type: "chest" },
-  GOLD: { name: "Altın", url: process.env.BASE_URL + "icons/Z.png", type: "chest" },
-  DUNGEON: { name: "Zindan", url: process.env.BASE_URL + "icons/D.png", type: "dungeon" },
-  ROCK: { name: "Kaya", url: process.env.BASE_URL + "icons/S.png", type: "resource" },
-  LOGS: { name: "Odun", url: process.env.BASE_URL + "icons/W.png", type: "resource" },
-  ORE: { name: "Cevher", url: process.env.BASE_URL + "icons/K.png", type: "resource" },
-  HIRE: { name: "Deri", url: process.env.BASE_URL + "icons/P.png", type: "resource" },
-  COTTON: { name: "Pamuk", url: process.env.BASE_URL + "icons/M.png", type: "resource" }
+  BLUE: { name: "Mavi", url: "https://avalonroads-97617.web.app/icons/T.png", type: "chest" },
+  GREEN: { name: "Yeşil", url: "https://avalonroads-97617.web.app/icons/V.png", type: "chest" },
+  GOLD: { name: "Altın", url: "https://avalonroads-97617.web.app/icons/Z.png", type: "chest" },
+  DUNGEON: { name: "Zindan", url: "https://avalonroads-97617.web.app/icons/D.png", type: "dungeon" },
+  ROCK: { name: "Kaya", url: "https://avalonroads-97617.web.app/icons/S.png", type: "resource" },
+  LOGS: { name: "Odun", url: "https://avalonroads-97617.web.app/icons/W.png", type: "resource" },
+  ORE: { name: "Cevher", url: "https://avalonroads-97617.web.app/icons/K.png", type: "resource" },
+  HIRE: { name: "Deri", url: "https://avalonroads-97617.web.app/icons/P.png", type: "resource" },
+  COTTON: { name: "Pamuk", url: "https://avalonroads-97617.web.app/icons/M.png", type: "resource" }
 };
 
 // ----- Normalize Fonksiyonu -----
@@ -82,7 +82,7 @@ client.on("interactionCreate", async interaction => {
       if (!info) return;
 
       if (info.type === "chest") {
-        // Badge 1 dahil göster
+        // Badge yoksa 1 göster
         const count = icon.badge ? ` (${icon.badge})` : " (1)";
         chests.push(`${info.name}${count}`);
       } else if (info.type === "dungeon") {
@@ -92,27 +92,27 @@ client.on("interactionCreate", async interaction => {
       }
     });
 
-    // Embed image URL doğru oluşturuluyor
-    const imageUrl = process.env.BASE_URL
-      ? process.env.BASE_URL.replace(/\/$/, "") + "/" + map.img.replace(/^\/+/, "")
-      : map.img;
+    // Embed image URL
+    const imageUrl = "https://avalonroads-97617.web.app/" + map.img.replace(/^\/+/, "");
 
-    const embed = new EmbedBuilder()
-      .setTitle(`Harita: ${map.name}`)
-      .setDescription(`Tier: ${map.tier}`)
-      .addFields(
-        { name: "Chestler", value: chests.join(", ") || "Yok", inline: true },
-        { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
-        { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
-      )
-      .setImage(imageUrl)
-      .setColor(0x00AE86);
-
+    // Hata yakalama ile embed
     try {
+      const embed = new EmbedBuilder()
+        .setTitle(`Harita: ${map.name}`)
+        .setDescription(`Tier: ${map.tier}`)
+        .addFields(
+          { name: "Chestler", value: chests.join(", ") || "Yok", inline: true },
+          { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
+          { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
+        )
+        .setImage(imageUrl)
+        .setColor(0x00AE86);
+
+      console.log("Embed URL:", imageUrl);
       await interaction.editReply({ embeds: [embed] });
       console.log("Harita gönderildi:", map.name);
     } catch (err) {
-      console.error("Interaction gönderilemedi:", err);
+      console.error("Embed gönderilemedi:", err);
       try {
         await interaction.followUp("Bir hata oluştu, harita gösterilemedi.");
       } catch (err2) {
