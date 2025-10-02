@@ -77,12 +77,11 @@ client.on("interactionCreate", async interaction => {
     const dungeons = [];
     const resources = [];
 
-    map.icons.forEach(icon => {
+    (map.icons || []).forEach(icon => {
       const info = iconMap[icon.alt];
-      if (!info) return;
+      if (!info) return; // geçersiz icon skip
 
       if (info.type === "chest") {
-        // Badge yoksa 1 göster
         const count = icon.badge ? ` (${icon.badge})` : " (1)";
         chests.push(`${info.name}${count}`);
       } else if (info.type === "dungeon") {
@@ -92,10 +91,8 @@ client.on("interactionCreate", async interaction => {
       }
     });
 
-    // Embed image URL
     const imageUrl = "https://avalonroads-97617.web.app/" + map.img.replace(/^\/+/, "");
 
-    // Hata yakalama ile embed
     try {
       const embed = new EmbedBuilder()
         .setTitle(`Harita: ${map.name}`)
