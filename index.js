@@ -82,7 +82,8 @@ client.on("interactionCreate", async interaction => {
       if (!info) return;
 
       if (info.type === "chest") {
-        const count = icon.badge && icon.badge > 1 ? ` (${icon.badge})` : "";
+        // Badge 1 dahil göster
+        const count = icon.badge ? ` (${icon.badge})` : " (1)";
         chests.push(`${info.name}${count}`);
       } else if (info.type === "dungeon") {
         dungeons.push(info.name);
@@ -90,6 +91,11 @@ client.on("interactionCreate", async interaction => {
         resources.push(info.name);
       }
     });
+
+    // Embed image URL doğru oluşturuluyor
+    const imageUrl = process.env.BASE_URL
+      ? process.env.BASE_URL.replace(/\/$/, "") + "/" + map.img.replace(/^\/+/, "")
+      : map.img;
 
     const embed = new EmbedBuilder()
       .setTitle(`Harita: ${map.name}`)
@@ -99,6 +105,7 @@ client.on("interactionCreate", async interaction => {
         { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
         { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
       )
+      .setImage(imageUrl)
       .setColor(0x00AE86);
 
     try {
