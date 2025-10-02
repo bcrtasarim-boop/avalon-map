@@ -14,7 +14,7 @@ app.listen(process.env.PORT || 3000, () => console.log("Uptime server running"))
 // ----- Discord Client -----
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// ----- Slash Command Register -----
+// ----- Slash Command Register (Guild) -----
 const commands = [
   new SlashCommandBuilder()
     .setName("map")
@@ -31,7 +31,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
   try {
     console.log("Slash komutlar güncelleniyor...");
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands }
     );
     console.log("Slash komutlar güncellendi ✅");
@@ -53,7 +53,7 @@ const iconMap = {
 
 // ----- Normalize Fonksiyonu -----
 function normalize(str) {
-  return str.toLowerCase().replace(/-/g, " ").trim();
+  return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
 }
 
 // ----- Slash Command -----
