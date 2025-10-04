@@ -6195,23 +6195,6 @@
     "img": "Setent-Al-Vietis%20t6.webp"
   },
   {
-    "name": "Setent-Al-Vietis",
-    "tier": 6,
-    "icons": [
-      {
-        "alt": "BLUE",
-        "badge": 2
-      },
-      {
-        "alt": "GREEN"
-      },
-      {
-        "alt": "LOGS"
-      }
-    ],
-    "img": "Setent-Al-Vietis%20t6.webp"
-  },
-  {
     "name": "Soues-Uzurtum",
     "tier": 6,
     "icons": [
@@ -6296,50 +6279,6 @@
     "img": "Cetos-Obaelos_T4.webp"
   },
   {
-    "name": "Cieitos-Avioaum",
-    "tier": 4,
-    "icons": [
-      {
-        "alt": "BLUE"
-      },
-      {
-        "alt": "GREEN",
-        "badge": 2
-      },
-      {
-        "alt": "ORE"
-      },
-      {
-        "alt": "HIRE"
-      },
-      {
-        "alt": "ROCK",
-        "badge": 2
-      }
-    ],
-    "img": "Cieitos-Avioaum_T4.webp"
-  },
-  {
-    "name": "Conitos-uruxtum",
-    "tier": 4,
-    "icons": [
-      {
-        "alt": "BLUE"
-      },
-      {
-        "alt": "GREEN",
-        "badge": 6
-      },
-      {
-        "alt": "LOGS"
-      },
-      {
-        "alt": "DUNGEON"
-      }
-    ],
-    "img": "Conitos-uruxtum_T4.webp"
-  },
-  {
     "name": "Conitos-uruxtum",
     "tier": 4,
     "icons": [
@@ -6381,23 +6320,6 @@
       }
     ],
     "img": "Coros-Alieam_T4.webp"
-  },
-  {
-    "name": "Coues-Exakrom",
-    "tier": 4,
-    "icons": [
-      {
-        "alt": "BLUE"
-      },
-      {
-        "alt": "GREEN",
-        "badge": 8
-      },
-      {
-        "alt": "DUNGEON"
-      }
-    ],
-    "img": "Coues-Exakrom_T4.webp"
   },
   {
     "name": "Honites-Izizaum",
@@ -6551,26 +6473,6 @@
       }
     ],
     "img": "Settun-Tersom%20t6.webp"
-  },
-  {
-    "name": "Firos-Osinsum",
-    "tier": 6,
-    "icons": [
-      {
-        "alt": "GOLD",
-        "badge": 3
-      },
-      {
-        "alt": "BLUE"
-      },
-      {
-        "alt": "ORE"
-      },
-      {
-        "alt": "DUNGEON"
-      }
-    ],
-    "img": "Firos-Osinsum_T6.webp"
   },
   {
     "name": "Oebitos-Oyozam",
