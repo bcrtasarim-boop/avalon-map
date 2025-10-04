@@ -57,13 +57,42 @@ function normalize(str) {
   return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
 }
 
-// ----- Görsel URL Fonksiyonu -----
-// data.json'daki dosya adından tam ve çalışır URL oluşturur.
+// ----- Görsel URL Fonksiyonu (CACHE BUSTING İLE NİHAİ VERSİYON) -----
 function getImageUrl(map) {
-  const fileName = map.img;
-  return "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(fileName);
-}
+  try {
+    let fileName = map.img;
 
+    // Gelen verinin bir metin (string) olduğundan emin olalım, değilse devam etme.
+    if (typeof fileName !== 'string' || fileName.trim() === '') {
+      console.error("HATA: Geçersiz 'img' verisi:", map.img, "Harita:", map.name);
+      return null;
+    }
+
+    // Başındaki "img/" kısmını kaldır (eğer varsa)
+    if (fileName.startsWith("img/")) {
+      fileName = fileName.substring(4);
+    }
+
+    // Dosya uzantısını .webp olarak değiştir
+    const lastDotIndex = fileName.lastIndexOf('.');
+    let baseName = (lastDotIndex !== -1) ? fileName.substring(0, lastDotIndex) : fileName;
+    
+    const finalFileName = baseName + ".webp";
+
+    // KESİN ÇÖZÜM BURADA: URL'nin sonuna her seferinde değişen bir parametre ekliyoruz.
+    // `?v=${Date.now()}` kısmı, Discord'u her seferinde resmi yeniden indirmeye zorlar.
+    const finalUrl = "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(finalFileName) + `?v=${Date.now()}`;
+    
+    // Hata ayıklama için terminale URL'yi yazdırabilirsin
+    // console.log("Oluşturulan URL:", finalUrl);
+    
+    return finalUrl;
+
+  } catch (error) {
+    console.error(`'${map.name}' için URL oluşturulurken hata oluştu:`, error);
+    return null; // Hata durumunda boş döndür ki bot çökmesin.
+  }
+}
 // ----- Slash Command (GÜNCELLENMİŞ VE AKILLI ARAMA)-----
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
@@ -156,3 +185,4 @@ client.on("interactionCreate", async interaction => {
 
 client.once("ready", () => console.log(`Bot hazır ✅ ${client.user.tag}`));
 client.login(process.env.BOT_TOKEN);
+
