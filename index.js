@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } =
 const { REST } = require("@discordjs/rest");
 const express = require("express");
 const dotenv = require("dotenv");
-const maps = require("./data.json"); // Temizlenmiş data.json dosyasını okur
+const maps = require("./data.json"); // Temizlenmiş ve tekrar etmeyen verileri içeren data.json
 
 dotenv.config();
 
@@ -35,7 +35,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
       { body: commands }
     );
     console.log("Slash komutlar güncellendi ✅");
-  } catch (err) { console.error(err); }
+  } catch (err) { console.error("Slash komutları güncellenirken hata:", err); }
 })();
 
 // ----- Icon Mapping -----
@@ -51,138 +51,109 @@ const iconMap = {
   COTTON: { name: "Pamuk", url: "https://avalonroads-97617.web.app/icons/M.png", type: "resource" }
 };
 
-// ----- Normalize Fonksiyonu -----
-// Tireleri ve çoklu boşlukları tek boşluğa çevirir, küçük harf yapar.
+// ----- Helper Functions -----
 function normalize(str) {
   return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
 }
 
-// ----- Görsel URL Fonksiyonu (CACHE BUSTING İLE NİHAİ VERSİYON) -----
 function getImageUrl(map) {
   try {
     let fileName = map.img;
-
-    // Gelen verinin bir metin (string) olduğundan emin olalım, değilse devam etme.
     if (typeof fileName !== 'string' || fileName.trim() === '') {
       console.error("HATA: Geçersiz 'img' verisi:", map.img, "Harita:", map.name);
       return null;
     }
-
-    // Başındaki "img/" kısmını kaldır (eğer varsa)
     if (fileName.startsWith("img/")) {
       fileName = fileName.substring(4);
     }
-
-    // Dosya uzantısını .webp olarak değiştir
     const lastDotIndex = fileName.lastIndexOf('.');
     let baseName = (lastDotIndex !== -1) ? fileName.substring(0, lastDotIndex) : fileName;
-    
     const finalFileName = baseName + ".webp";
-
-    // KESİN ÇÖZÜM BURADA: URL'nin sonuna her seferinde değişen bir parametre ekliyoruz.
-    // `?v=${Date.now()}` kısmı, Discord'u her seferinde resmi yeniden indirmeye zorlar.
     const finalUrl = "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(finalFileName) + `?v=${Date.now()}`;
-    
-    // Hata ayıklama için terminale URL'yi yazdırabilirsin
-    // console.log("Oluşturulan URL:", finalUrl);
-    
     return finalUrl;
-
   } catch (error) {
     console.error(`'${map.name}' için URL oluşturulurken hata oluştu:`, error);
-    return null; // Hata durumunda boş döndür ki bot çökmesin.
+    return null;
   }
 }
-// ----- Slash Command (GÜNCELLENMİŞ VE AKILLI ARAMA)-----
+
+// ----- Slash Command Handler (NİHAİ SÜRÜM) -----
 client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+  if (!interaction.isChatInputCommand() || interaction.commandName !== "map") return;
 
-  if (interaction.commandName === "map") {
-    try {
-      if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+  try {
+    await interaction.deferReply(); // ZAMAN AŞIMI HATASINI ENGELLEMEK İÇİN EN BAŞA ALINDI
 
-      const inputName = interaction.options.getString("isim");
-      const normalizedInput = normalize(inputName);
+    const inputName = interaction.options.getString("isim");
+    const normalizedInput = normalize(inputName);
+    const inputParts = normalizedInput.split(' ');
 
-      // 1. Kullanıcının girdisini boşluktan ayırıyoruz.
-      const inputParts = normalizedInput.split(' ');
-      if (inputParts.length < 2) {
-        await interaction.editReply("Lütfen aramanızı `kelime1-kelime2` formatında yapın (Örn: `firos-eno`).");
-        return;
-      }
-      const inputWord1 = inputParts[0];
-      const inputWord2_prefix = inputParts[1];
+    if (inputParts.length < 2) {
+      await interaction.editReply("Lütfen aramanızı `kelime1-kelime2` formatında yapın (Örn: `firos-eno`).");
+      return;
+    }
+    const inputWord1 = inputParts[0];
+    const inputWord2_prefix = inputParts[1];
 
-      // 2. Harita listesini yeni kurala göre filtreliyoruz.
-      const matches = maps.filter(m => {
-        const mapNameNormalized = normalize(m.name);
-        const mapParts = mapNameNormalized.split(' ');
+    const matches = maps.filter(m => {
+      const mapNameNormalized = normalize(m.name);
+      const mapParts = mapNameNormalized.split(' ');
+      if (mapParts.length < 2) return false;
+      const mapWord1 = mapParts[0];
+      const mapWord2 = mapParts[1];
+      return mapWord1 === inputWord1 && mapWord2.startsWith(inputWord2_prefix);
+    });
 
-        if (mapParts.length < 2) return false;
+    if (matches.length === 0) {
+      await interaction.editReply("Harita bulunamadı. Lütfen aramanızı kontrol edin.");
+      return;
+    }
 
-        const mapWord1 = mapParts[0];
-        const mapWord2 = mapParts[1];
-
-        // Kural: İlk kelime tam eşleşmeli VE ikinci kelime kullanıcının yazdığı ile başlamalı.
-        return mapWord1 === inputWord1 && mapWord2.startsWith(inputWord2_prefix);
+    if (matches.length === 1) {
+      const map = matches[0];
+      const chests = [], dungeons = [], resources = [];
+      (map.icons || []).forEach(icon => {
+        const info = iconMap[icon.alt];
+        if (!info) return;
+        if (info.type === "chest") {
+          const count = icon.badge ? ` (${icon.badge})` : " (1)";
+          chests.push(`${info.name}${count}`);
+        } else if (info.type === "dungeon") dungeons.push(info.name);
+        else if (info.type === "resource") resources.push(info.name);
       });
 
-      // 3. Eşleşme sonuçlarını yönetiyoruz.
-      if (matches.length === 0) {
-        await interaction.editReply("Harita bulunamadı. Lütfen aramanızı kontrol edin.");
-        return;
-      }
+      const embed = new EmbedBuilder()
+        .setTitle(`Harita: ${map.name}`)
+        .setDescription(`Tier: ${map.tier}`)
+        .addFields(
+          { name: "Chestler", value: chests.join(", ") || "Yok", inline: true },
+          { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
+          { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
+        )
+        .setImage(getImageUrl(map))
+        .setColor(0x00AE86);
 
-      if (matches.length === 1) {
-        const map = matches[0];
-        const chests = [], dungeons = [], resources = [];
-        (map.icons || []).forEach(icon => {
-          const info = iconMap[icon.alt];
-          if (!info) return;
-          if (info.type === "chest") {
-            const count = icon.badge ? ` (${icon.badge})` : " (1)";
-            chests.push(`${info.name}${count}`);
-          } else if (info.type === "dungeon") dungeons.push(info.name);
-          else if (info.type === "resource") resources.push(info.name);
-        });
+      await interaction.editReply({ embeds: [embed] });
+      return;
+    }
 
-        const embed = new EmbedBuilder()
-          .setTitle(`Harita: ${map.name}`)
-          .setDescription(`Tier: ${map.tier}`)
-          .addFields(
-            { name: "Chestler", value: chests.join(", ") || "Yok", inline: true },
-            { name: "Zindanlar", value: dungeons.join(", ") || "Yok", inline: true },
-            { name: "Kaynaklar", value: resources.join(", ") || "Yok", inline: true }
-          )
-          .setImage(getImageUrl(map))
-          .setColor(0x00AE86);
-
-        await interaction.editReply({ embeds: [embed] });
-        return;
-      }
-
-      if (matches.length > 1) {
-        const matchedNames = matches.map(m => `\`${m.name}\``).join("\n");
-        await interaction.editReply(
-          `Aramanızla eşleşen birden fazla sonuç bulundu. Lütfen daha spesifik olun:\n\n${matchedNames}`
-        );
-        return;
-      }
-    } catch (err) {
-      console.error("Bir hata oluştu:", err);
-      try {
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply("Bir hata oluştu, harita gösterilemedi.");
-        } else {
-          await interaction.editReply("Bir hata oluştu, harita gösterilemedi.");
-        }
-      } catch (err2) {
-        console.error("Fallback mesaj bile gönderilemedi:", err2);
-      }
+    if (matches.length > 1) {
+      const matchedNames = matches.map(m => `\`${m.name}\``).join("\n");
+      await interaction.editReply(
+        `Aramanızla eşleşen birden fazla sonuç bulundu. Lütfen daha spesifik olun:\n\n${matchedNames}`
+      );
+      return;
+    }
+  } catch (err) {
+    console.error("Ana işlem bloğunda hata oluştu:", err);
+    try {
+      // Zaten defer/reply yapıldığı için editReply ile hata mesajı gönderilir.
+      await interaction.editReply("Bir hata oluştu, komut işlenemedi.");
+    } catch (err2) {
+      console.error("Hata mesajı bile gönderilemedi:", err2);
     }
   }
 });
 
 client.once("ready", () => console.log(`Bot hazır ✅ ${client.user.tag}`));
 client.login(process.env.BOT_TOKEN);
-
