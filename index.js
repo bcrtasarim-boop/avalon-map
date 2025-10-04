@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, EmbedBuilder } =
 const { REST } = require("@discordjs/rest");
 const express = require("express");
 const dotenv = require("dotenv");
-const maps = require("./data.json"); // Temizlenmiş ve tekrar etmeyen verileri içeren data.json
+const maps = require("./data.json"); 
 
 dotenv.config();
 
@@ -13,6 +13,38 @@ app.listen(process.env.PORT || 3000, () => console.log("Uptime server running"))
 
 // ----- Discord Client -----
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+// ----- Helper Functions -----
+function normalize(str) {
+  return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
+}
+
+function getImageUrl(map) {
+  try {
+    let fileName = map.img;
+    if (typeof fileName !== 'string' || fileName.trim() === '') return null;
+    if (fileName.startsWith("img/")) fileName = fileName.substring(4);
+    const lastDotIndex = fileName.lastIndexOf('.');
+    let baseName = (lastDotIndex !== -1) ? fileName.substring(0, lastDotIndex) : fileName;
+    const finalFileName = baseName + ".webp";
+    return `https://avalonroads-97617.web.app/img_webp/${encodeURIComponent(finalFileName)}?v=${Date.now()}`;
+  } catch (error) {
+    console.error(`'${map.name}' için URL oluşturulurken hata oluştu:`, error);
+    return null;
+  }
+}
+
+// ----- OPTIMIZASYON ADIMI: Veriyi Başlangıçta Sadece Bir Kez İşleme -----
+console.log("Harita verisi optimize ediliyor...");
+const searchableMaps = maps.map(map => {
+  const normalized = normalize(map.name);
+  return {
+    ...map, // Orijinal map verilerini koru (...map.name, ...map.tier vb.)
+    searchParts: normalized.split(' ') // Aramada kullanılacak parçaları başta hazırla
+  };
+});
+console.log(`${searchableMaps.length} harita arama için hazırlandı.`);
+
 
 // ----- Slash Command Register -----
 const commands = [
@@ -51,38 +83,13 @@ const iconMap = {
   COTTON: { name: "Pamuk", url: "https://avalonroads-97617.web.app/icons/M.png", type: "resource" }
 };
 
-// ----- Helper Functions -----
-function normalize(str) {
-  return str.toLowerCase().replace(/[-\s]+/g, " ").trim();
-}
 
-function getImageUrl(map) {
-  try {
-    let fileName = map.img;
-    if (typeof fileName !== 'string' || fileName.trim() === '') {
-      console.error("HATA: Geçersiz 'img' verisi:", map.img, "Harita:", map.name);
-      return null;
-    }
-    if (fileName.startsWith("img/")) {
-      fileName = fileName.substring(4);
-    }
-    const lastDotIndex = fileName.lastIndexOf('.');
-    let baseName = (lastDotIndex !== -1) ? fileName.substring(0, lastDotIndex) : fileName;
-    const finalFileName = baseName + ".webp";
-    const finalUrl = "https://avalonroads-97617.web.app/img_webp/" + encodeURIComponent(finalFileName) + `?v=${Date.now()}`;
-    return finalUrl;
-  } catch (error) {
-    console.error(`'${map.name}' için URL oluşturulurken hata oluştu:`, error);
-    return null;
-  }
-}
-
-// ----- Slash Command Handler (NİHAİ SÜRÜM) -----
+// ----- Slash Command Handler (OPTİMİZE EDİLMİŞ VE HIZLI ARAMA) -----
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand() || interaction.commandName !== "map") return;
 
   try {
-    await interaction.deferReply(); // ZAMAN AŞIMI HATASINI ENGELLEMEK İÇİN EN BAŞA ALINDI
+    await interaction.deferReply(); 
 
     const inputName = interaction.options.getString("isim");
     const normalizedInput = normalize(inputName);
@@ -95,12 +102,13 @@ client.on("interactionCreate", async interaction => {
     const inputWord1 = inputParts[0];
     const inputWord2_prefix = inputParts[1];
 
-    const matches = maps.filter(m => {
-      const mapNameNormalized = normalize(m.name);
-      const mapParts = mapNameNormalized.split(' ');
-      if (mapParts.length < 2) return false;
-      const mapWord1 = mapParts[0];
-      const mapWord2 = mapParts[1];
+    // YENİ VE HIZLI ARAMA: Önceden işlenmiş 'searchableMaps' listesini kullanıyoruz
+    const matches = searchableMaps.filter(map => {
+      if (map.searchParts.length < 2) return false;
+      
+      const mapWord1 = map.searchParts[0];
+      const mapWord2 = map.searchParts[1];
+      
       return mapWord1 === inputWord1 && mapWord2.startsWith(inputWord2_prefix);
     });
 
@@ -121,7 +129,6 @@ client.on("interactionCreate", async interaction => {
         } else if (info.type === "dungeon") dungeons.push(info.name);
         else if (info.type === "resource") resources.push(info.name);
       });
-
       const embed = new EmbedBuilder()
         .setTitle(`Harita: ${map.name}`)
         .setDescription(`Tier: ${map.tier}`)
@@ -132,7 +139,6 @@ client.on("interactionCreate", async interaction => {
         )
         .setImage(getImageUrl(map))
         .setColor(0x00AE86);
-
       await interaction.editReply({ embeds: [embed] });
       return;
     }
@@ -144,11 +150,15 @@ client.on("interactionCreate", async interaction => {
       );
       return;
     }
+
   } catch (err) {
     console.error("Ana işlem bloğunda hata oluştu:", err);
     try {
-      // Zaten defer/reply yapıldığı için editReply ile hata mesajı gönderilir.
-      await interaction.editReply("Bir hata oluştu, komut işlenemedi.");
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: "Bir hata oluştu, komut işlenemedi.", embeds: [], files: [] });
+      } else {
+        await interaction.reply({ content: "Komut işlenirken bir hata oluştu. Lütfen tekrar deneyin.", ephemeral: true });
+      }
     } catch (err2) {
       console.error("Hata mesajı bile gönderilemedi:", err2);
     }
